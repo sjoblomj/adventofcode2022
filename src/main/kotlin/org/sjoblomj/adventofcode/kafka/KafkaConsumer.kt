@@ -10,14 +10,16 @@ import java.util.*
 
 private val logger = LoggerFactory.getLogger("org.sjoblomj.adventofcode.kafka.KafkaConsumer")
 
-fun getAllRecords(topic: String, maxWaitTime: Long = 10_000): List<ConsumerRecord<String, String>> {
+fun getAllRecords(topic: String, expectedKeys: List<String> = emptyList(), maxWaitTime: Long = 10_000)
+: List<ConsumerRecord<String, String>> {
+
 	val startTime = System.currentTimeMillis()
 
 	KafkaConsumer<String, String>(kafkaConfig())
 		.use {
 			it.subscribe(listOf(topic))
 
-			val recs = consumeRecords(it, maxWaitTime)
+			val recs = consumeRecords(it, maxWaitTime, expectedKeys)
 
 			val timeTaken = System.currentTimeMillis() - startTime
 			logger.info("For topic $topic: Found ${recs.size} records in $timeTaken ms")
@@ -25,15 +27,17 @@ fun getAllRecords(topic: String, maxWaitTime: Long = 10_000): List<ConsumerRecor
 		}
 }
 
-private fun consumeRecords(consumer: KafkaConsumer<String, String>, maxTime: Long): List<ConsumerRecord<String, String>> {
+private fun consumeRecords(consumer: KafkaConsumer<String, String>, maxTime: Long, expectedKeys: List<String>)
+: List<ConsumerRecord<String, String>> {
+
 	val startTime = System.currentTimeMillis()
 	val recs = mutableListOf<ConsumerRecord<String, String>>()
 
-	while (recs.isEmpty() && System.currentTimeMillis() - startTime < maxTime) {
+	while ((recs.isEmpty() || !recs.map { it.key() }.containsAll(expectedKeys)) && System.currentTimeMillis() - startTime < maxTime) {
 		val records = consumer.poll(Duration.ofMillis(maxTime))
-		for (record in records) {
-			recs.add(record)
-		}
+		for (record in records)
+			if (record.value() != null)
+				recs.add(record)
 	}
 	return recs
 }

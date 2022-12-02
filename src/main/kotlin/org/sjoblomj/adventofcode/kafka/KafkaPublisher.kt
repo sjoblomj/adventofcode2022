@@ -8,6 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.header.Headers
 import org.apache.kafka.common.header.internals.RecordHeaders
+import org.apache.kafka.common.serialization.IntegerSerializer
 import org.apache.kafka.common.serialization.StringSerializer
 import java.io.File
 import java.util.*
@@ -19,12 +20,16 @@ class KafkaPublisher {
 		it.enable(SerializationFeature.INDENT_OUTPUT)
 		it.findAndRegisterModules()
 	}
-	private val producerConfig = HashMap<String, Any>().also {
+	private val producer = KafkaProducer<String, String>(HashMap<String, Any>().also {
 		it[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
 		it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
 		it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-	}
-	private val producer = KafkaProducer<String, String>(producerConfig)
+	})
+	private val intProducer = KafkaProducer<Int, Int?>(HashMap<String, Any>().also {
+		it[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
+		it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = IntegerSerializer::class.java
+		it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = IntegerSerializer::class.java
+	})
 
 
 	fun readFile(fileName: String, topic: String) {
@@ -41,9 +46,13 @@ class KafkaPublisher {
 		putDataOnTopic(key, mapper.writeValueAsString(value), RecordHeaders(), topic, producer)
 	}
 
-	fun <T> putDataOnTopic(
-		key: String?, value: T, headers: Headers, topic: String,
-		kafkaProducer: KafkaProducer<String, T>
+	fun putDataOnTopic(key: Int, value: Int?, topic: String) {
+		putDataOnTopic(key, value, RecordHeaders(), topic, intProducer)
+	}
+
+	fun <K, V> putDataOnTopic(
+		key: K?, value: V, headers: Headers, topic: String,
+		kafkaProducer: KafkaProducer<K, V>
 	): RecordMetadata {
 
 		val producerRecord = ProducerRecord(topic, key, value)
