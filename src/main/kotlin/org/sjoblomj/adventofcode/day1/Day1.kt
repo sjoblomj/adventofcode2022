@@ -17,11 +17,11 @@ private val logger = LoggerFactory.getLogger("org.sjoblomj.adventofcode.day1.Day
 const val day = "day1"
 
 fun day1() {
-	val day1 = Day1()
-	KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", day1.inputTopic)
-	val stream = day1.performPart1()
+	val d = Day1()
+	KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
+	val stream = d.solve()
 
-	val records = getAllRecords(resultTopic)
+	val records = getAllRecords(resultTopic, listOf("$day$part1", "$day$part2"))
 	logger.info("The elf carrying the most calories are carrying {} calories",
 		records.first { it.key() == "$day$part1" }.value())
 	logger.info("The three elves carrying the most calories are together carrying {} calories",
@@ -35,7 +35,7 @@ class Day1 {
 	private val groupedTopic = "${inputTopic}_grouped_summation"
 	private val mutableListSerde: Serde<MutableList<Int>> = MutableListSerde()
 
-	internal fun performPart1(): KafkaStreamsSetup {
+	internal fun solve(): KafkaStreamsSetup {
 		KafkaPublisher().putDataOnTopic(0, null, groupedTopic) // Topic must exist; put a dummy value on it to create
 
 		val streamsBuilder = StreamsBuilder()

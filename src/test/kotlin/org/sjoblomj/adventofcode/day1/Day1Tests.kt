@@ -8,10 +8,10 @@ class Day1Tests {
 
 	@Test
 	fun `Calculates the correct answers`() {
-		val day1 = Day1()
-		KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", day1.inputTopic)
+		val d = Day1()
+		KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
 
-		val stream = day1.performPart1()
+		val stream = d.solve()
 
 		val records = getAllRecords(resultTopic, listOf("$day$part1", "$day$part2"))
 		assertEquals("71300", records.last { it.key() == "$day$part1" }.value())
@@ -38,11 +38,11 @@ class Day1Tests {
 			"10000"
 		)
 
-		val day1 = Day1()
+		val d = Day1()
 		val kafkaPublisher = KafkaPublisher()
-		testData.forEach { kafkaPublisher.putDataOnTopic("test", it, day1.inputTopic) }
+		testData.forEach { kafkaPublisher.putDataOnTopic("test", it, d.inputTopic) }
 
-		val stream = day1.performPart1()
+		val stream = d.solve()
 
 		val expectedResultPart1 = (7000 + 8000 + 9000).toString()
 		val expectedResultPart2 = ((7000 + 8000 + 9000) + (5000 + 6000) + (10000)).toString()
