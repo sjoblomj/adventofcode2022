@@ -19,7 +19,7 @@ class KafkaStreamsSetup(streamsBuilder: StreamsBuilder) {
 
 
 	private fun kafkaConfig() = Properties().also {
-		it[StreamsConfig.APPLICATION_ID_CONFIG] = "applicationId"
+		it[StreamsConfig.APPLICATION_ID_CONFIG] = UUID.randomUUID().toString()
 		it[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
 		it[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.IntegerSerde::class.java
 		it[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.IntegerSerde::class.java

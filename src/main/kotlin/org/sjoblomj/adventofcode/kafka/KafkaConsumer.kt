@@ -40,8 +40,7 @@ private fun consumeRecords(consumer: KafkaConsumer<String, String>, maxTime: Lon
 
 private fun kafkaConfig() = Properties().also {
 	it[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
-	it[ConsumerConfig.GROUP_ID_CONFIG] = "kafkaGroupId"
-	it[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = 5000
+	it[ConsumerConfig.GROUP_ID_CONFIG] = "consumer"
 	it[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
 	it[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
 	it[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
