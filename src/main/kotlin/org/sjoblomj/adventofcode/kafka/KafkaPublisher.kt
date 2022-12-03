@@ -20,7 +20,7 @@ class KafkaPublisher {
 		it.enable(SerializationFeature.INDENT_OUTPUT)
 		it.findAndRegisterModules()
 	}
-	private val producer = KafkaProducer<String, String>(HashMap<String, Any>().also {
+	private val producer = KafkaProducer<String?, String?>(HashMap<String, Any>().also {
 		it[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
 		it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
 		it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
@@ -38,7 +38,7 @@ class KafkaPublisher {
 		}
 	}
 
-	fun putDataOnTopic(key: String, value: String, topic: String) {
+	fun putDataOnTopic(key: String?, value: String?, topic: String) {
 		putDataOnTopic(key, value, RecordHeaders(), topic, producer)
 	}
 
