@@ -1,10 +1,7 @@
 package org.sjoblomj.adventofcode.day2
 
 import org.junit.jupiter.api.Test
-import org.sjoblomj.adventofcode.kafka.KafkaPublisher
-import org.sjoblomj.adventofcode.kafka.getAllRecords
-import org.sjoblomj.adventofcode.kafka.part1
-import org.sjoblomj.adventofcode.kafka.resultTopic
+import org.sjoblomj.adventofcode.kafka.*
 import kotlin.test.assertEquals
 
 class Day2Tests {
@@ -16,8 +13,9 @@ class Day2Tests {
 
 		val stream = d.solve()
 
-		val records = getAllRecords(resultTopic, listOf("${day}$part1"))
+		val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 		assertEquals("10941", records.last { it.key() == "${day}$part1" }.value())
+		assertEquals("13071", records.last { it.key() == "${day}$part2" }.value())
 		stream.close()
 	}
 
@@ -36,8 +34,10 @@ class Day2Tests {
 		val stream = d.solve()
 
 		val expectedResultPart1 = ((paperPoints + winPoints) + (rockPoints + losePoints) + (scissorsPoints + drawPoints)).toString()
-		val records = getAllRecords(resultTopic, listOf("${day}$part1"))
+		val expectedResultPart2 = ((rockPoints + drawPoints) + (rockPoints + losePoints) + (rockPoints + winPoints)).toString()
+		val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 		assertEquals(expectedResultPart1, records.last { it.key() == "${day}$part1" }.value())
+		assertEquals(expectedResultPart2, records.last { it.key() == "${day}$part2" }.value())
 		stream.close()
 	}
 }
