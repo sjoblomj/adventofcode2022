@@ -98,7 +98,7 @@ class Day1 {
 			.reduce { res1, res2 -> res1 + res2 }
 			.toStream()
 			.map { _, value -> KeyValue("$day$part", value.toString()) }
-			.peek { _, value -> logger.info("Result $part: - $value") }
+			.peek { _, value -> logger.info("Result $part: $value") }
 			.to(resultTopic, Produced.with(stringSerde, stringSerde))
 	}
 

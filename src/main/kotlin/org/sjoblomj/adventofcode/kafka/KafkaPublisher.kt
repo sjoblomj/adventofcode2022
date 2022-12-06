@@ -33,8 +33,9 @@ class KafkaPublisher {
 
 
 	fun readFile(fileName: String, topic: String) {
+		var index = 0
 		File(fileName).inputStream().bufferedReader().forEachLine {
-			putDataOnTopic(null, it, RecordHeaders(), topic, producer)
+			putDataOnTopic("${index++}", it, RecordHeaders(), topic, producer)
 		}
 	}
 
@@ -50,7 +51,7 @@ class KafkaPublisher {
 		putDataOnTopic(key, value, RecordHeaders(), topic, intProducer)
 	}
 
-	fun <K, V> putDataOnTopic(
+	private fun <K, V> putDataOnTopic(
 		key: K?, value: V, headers: Headers, topic: String,
 		kafkaProducer: KafkaProducer<K, V>
 	): RecordMetadata {
