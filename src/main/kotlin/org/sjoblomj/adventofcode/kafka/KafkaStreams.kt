@@ -2,16 +2,15 @@ package org.sjoblomj.adventofcode.kafka
 
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
+import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 import java.util.*
 
-class KafkaStreamsSetup(streamsBuilder: StreamsBuilder) {
+class KafkaStreamsSetup(topology: Topology) {
 	private val kafkaStreams: KafkaStreams
 
 	init {
-		val topology = streamsBuilder.build()
 		kafkaStreams = KafkaStreams(topology, kafkaConfig())
 		kafkaStreams.start()
 		Runtime.getRuntime().addShutdownHook(Thread(kafkaStreams::close))

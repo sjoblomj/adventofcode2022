@@ -1,4 +1,4 @@
-package org.sjoblomj.adventofcode.day1
+package org.sjoblomj.adventofcode.kafka
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.common.serialization.Deserializer

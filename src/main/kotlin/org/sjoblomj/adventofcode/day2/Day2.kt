@@ -14,7 +14,7 @@ const val day = "day2"
 
 fun day2() {
 	val d = Day2()
-	KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
+	readFileToTopic("src/main/resources/inputs/$day.txt", d.inputTopic)
 	val stream = d.solve()
 
 	val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
@@ -30,15 +30,15 @@ class Day2 {
 	private val totalScorePart2Topic = "${inputTopic}_total_score_$part2"
 
 	internal fun solve(): KafkaStreamsSetup {
-		KafkaPublisher().putDataOnTopic(null, null, totalScorePart1Topic) // Topic must exist; put a dummy value on it to create
-		KafkaPublisher().putDataOnTopic(null, null, totalScorePart2Topic) // Topic must exist; put a dummy value on it to create
+		putDataOnTopic(null, null, totalScorePart1Topic) // Topic must exist; put a dummy value on it to create
+		putDataOnTopic(null, null, totalScorePart2Topic) // Topic must exist; put a dummy value on it to create
 
 		val streamsBuilder = StreamsBuilder()
 		part1(streamsBuilder)
 		part2(streamsBuilder)
 		calculateTotalScore(streamsBuilder, part1, totalScorePart1Topic)
 		calculateTotalScore(streamsBuilder, part2, totalScorePart2Topic)
-		return KafkaStreamsSetup(streamsBuilder)
+		return KafkaStreamsSetup(streamsBuilder.build())
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {

@@ -18,7 +18,7 @@ const val day = "day1"
 
 fun day1() {
 	val d = Day1()
-	KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
+	readFileToTopic("src/main/resources/inputs/$day.txt", d.inputTopic)
 	val stream = d.solve()
 
 	val records = getAllRecords(resultTopic, listOf("$day$part1", "$day$part2"))
@@ -36,13 +36,13 @@ class Day1 {
 	private val mutableListSerde: Serde<MutableList<Int>> = MutableListSerde()
 
 	internal fun solve(): KafkaStreamsSetup {
-		KafkaPublisher().putDataOnTopic(0, null, groupedTopic) // Topic must exist; put a dummy value on it to create
+		putDataOnTopic(0, null, groupedTopic) // Topic must exist; put a dummy value on it to create
 
 		val streamsBuilder = StreamsBuilder()
 		groupAndSum(streamsBuilder)
 		part1(streamsBuilder)
 		part2(streamsBuilder)
-		return KafkaStreamsSetup(streamsBuilder)
+		return KafkaStreamsSetup(streamsBuilder.build())
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {

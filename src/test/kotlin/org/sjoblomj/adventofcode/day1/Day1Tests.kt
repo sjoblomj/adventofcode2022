@@ -9,7 +9,7 @@ class Day1Tests {
 	@Test
 	fun `Calculates the correct answers`() {
 		val d = Day1()
-		KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
+		readFileToTopic("src/main/resources/inputs/$day.txt", d.inputTopic)
 
 		val stream = d.solve()
 
@@ -39,8 +39,7 @@ class Day1Tests {
 		)
 
 		val d = Day1()
-		val kafkaPublisher = KafkaPublisher()
-		testData.forEach { kafkaPublisher.putDataOnTopic("test", it, d.inputTopic) }
+		testData.forEach { putDataOnTopic("test", it, d.inputTopic) }
 
 		val stream = d.solve()
 

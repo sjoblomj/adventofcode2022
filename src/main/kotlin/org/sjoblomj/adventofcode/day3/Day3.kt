@@ -14,7 +14,7 @@ const val day = "day3"
 
 fun day3() {
 	val d = Day3()
-	KafkaPublisher().readFile("src/main/resources/inputs/$day.txt", d.inputTopic)
+	readFileToTopic("src/main/resources/inputs/$day.txt", d.inputTopic)
 	val stream = d.solve()
 
 	val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
@@ -31,7 +31,7 @@ class Day3 {
 		val streamsBuilder = StreamsBuilder()
 		part1(streamsBuilder)
 		part2(streamsBuilder)
-		return KafkaStreamsSetup(streamsBuilder)
+		return KafkaStreamsSetup(streamsBuilder.build())
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {
