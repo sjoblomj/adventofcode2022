@@ -59,7 +59,7 @@ class Day5 {
 			.addProcessor(parserName, ProcessorSupplier { Parser(stackAccumulatorStoreName, stackAccumulatorName, stackBuilderName, movementProcessorName) }, source)
 			.addProcessor(stackAccumulatorName, ProcessorSupplier { StackAccumulator(stackAccumulatorStoreName) }, parserName)
 			.addProcessor(stackBuilderName, ProcessorSupplier { StackBuilder(stackStoreName) }, parserName)
-			.addProcessor(movementProcessorName, ProcessorSupplier { MovementProcessor(stackStoreName, "$day$part1", 3) }, parserName)
+			.addProcessor(movementProcessorName, ProcessorSupplier { MovementProcessor(stackStoreName, 3) }, parserName)
 			.addStateStore(stackAccumulatorStoreBuilder, parserName)
 			.addStateStore(stackAccumulatorStoreBuilder, stackAccumulatorName)
 			.addStateStore(stackStoreBuilder, stackBuilderName)
@@ -162,7 +162,6 @@ class Day5 {
 
 	private class MovementProcessor(
 		private val stateStoreName: String,
-		private val outputKey: String,
 		private val punctuationInterval: Long
 	) : Processor<String, String, String, String> {
 
@@ -182,48 +181,78 @@ class Day5 {
 			val regexGroups = moveRegex.matchEntire(record.value())!!.groups
 			val source = regexGroups["source"]!!.value
 			val dest = regexGroups["dest"]!!.value
+			val itemsToMove = record.key().toInt()
 
-			logger.info("MovementProcessor ${record.key()} times from stack $source to stack $dest")
-			logger.info("MovementProcessor stack before from: ${store[source]}")
-			logger.info("MovementProcessor stack before to:   ${store[dest]}")
+			logger.info("MovementProcessor $itemsToMove times from stack $source to stack $dest")
 
-			repeat((0 until record.key().toInt()).count()) {
-				val item = removeFromStack(source)
-				addToStack(dest, item)
-				logger.info("MovementProcessor item: $item")
+			move(part1, source, dest) { sourceName: String, destName: String, part: String ->
+				moveItemNTimes(itemsToMove, sourceName, destName, part)
 			}
 
-			logger.info("MovementProcessor stack after  from: ${store[source]}")
-			logger.info("MovementProcessor stack after  to:   ${store[dest]}")
+			move(part2, source, dest) { sourceName: String, destName: String, part: String ->
+				moveNItems(itemsToMove, sourceName, destName, part)
+			}
+		}
+
+		private fun move(part: String, source: String, dest: String, moveFunction: (String, String, String) -> Unit) {
+			val sourceName = "${part}_$source"
+			val destName = "${part}_$dest"
+			logger.info("$part: MovementProcessor stack before from: ${store[sourceName]}")
+			logger.info("$part: MovementProcessor stack before to:   ${store[destName]}")
+
+			moveFunction.invoke(sourceName, destName, part)
+
+			logger.info("$part: MovementProcessor stack after  from: ${store[sourceName]}")
+			logger.info("$part: MovementProcessor stack after  to:   ${store[destName]}")
 		}
 
 		override fun close() {
 		}
 
 
-		private fun removeFromStack(stackName: String): String {
-			val item = store[stackName].last()
-			store.put(stackName, store[stackName].dropLast(1).toMutableList())
+		private fun moveItemNTimes(itemsToMove: Int, sourceName: String, destName: String, part: String) {
+			repeat((0 until itemsToMove).count()) {
+				moveNItems(1, sourceName, destName, part)
+			}
+		}
+
+		private fun moveNItems(itemsToMove: Int, sourceName: String, destName: String, part: String) {
+			val item = removeFromStack(sourceName, itemsToMove)
+			addToStack(destName, item)
+			logger.info("$part: MovementProcessor items: $item")
+		}
+
+		private fun removeFromStack(stackName: String, itemsToRemove: Int): List<String> {
+			val item = store[stackName].takeLast(itemsToRemove)
+			store.put(stackName, store[stackName].dropLast(itemsToRemove).toMutableList())
 			return item
 		}
 
-		private fun addToStack(stackName: String, item: String) {
+		private fun addToStack(stackName: String, items: List<String>) {
 			val stack = store[stackName]
-			stack.add(item)
+			stack.addAll(items)
 			store.put(stackName, stack)
 		}
 
 		private fun forwardTopItem(timestamp: Long) {
+			forwardTopItemsForPart(timestamp, part1)
+			forwardTopItemsForPart(timestamp, part2)
+		}
+
+		private fun forwardTopItemsForPart(timestamp: Long, part: String) {
 			var letters = ""
 
 			store.all().use {
 				while (it.hasNext()) {
-					letters += it.next().value.last()
+					val kv = it.next()
+					if (kv.key.contains(part)) {
+						letters += kv.value.last()
+					}
 				}
 			}
 
-			logger.info("Puctuation - sending '$letters'")
-			val rec = Record(outputKey, letters, timestamp)
+			logger.info("$part: Puctuation - sending '$letters'")
+			val rec = Record("$day$part", letters, timestamp)
 			context.forward(rec)
 		}
 	}
@@ -272,7 +301,8 @@ class Day5 {
 				logger.info("StackBuilderProcessor - stack: ${record.key()}, item: '${record.value()}' - Ignoring")
 			else {
 				logger.info("StackBuilderProcessor - stack: ${record.key()}, item: '${record.value()}'")
-				addToStack(record.key(), record.value())
+				addToStack(record.key(), record.value(), part1)
+				addToStack(record.key(), record.value(), part2)
 			}
 		}
 
@@ -280,11 +310,11 @@ class Day5 {
 		}
 
 
-		private fun addToStack(stackName: String, item: String) {
-			logger.info("Adding '$item' to stack $stackName")
-			val stack = store[stackName] ?: mutableListOf()
+		private fun addToStack(stackName: String, item: String, prefix: String) {
+			logger.info("$prefix: Adding '$item' to stack $stackName")
+			val stack = store["${prefix}_$stackName"] ?: mutableListOf()
 			stack.add(item)
-			store.put(stackName, stack)
+			store.put("${prefix}_$stackName", stack)
 		}
 	}
 }
