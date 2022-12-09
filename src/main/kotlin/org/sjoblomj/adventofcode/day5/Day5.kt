@@ -132,10 +132,9 @@ class Day5 {
 			if (num == null || source == null || dest == null)
 				throw RuntimeException("Failed to parse ${record.value()}")
 
-			repeat((0 until num.toInt()).count()) {
-				val r = Record(source.toString(), dest.toString(), record.timestamp())
-				context.forward(r, movementProcessorName)
-			}
+			val movement = "$source to $dest"
+			val r = Record(num, movement, record.timestamp())
+			context.forward(r, movementProcessorName)
 		}
 
 		private fun reverseStackAccumulation(record: Record<String, String>) {
@@ -179,16 +178,23 @@ class Day5 {
 
 		override fun process(record: Record<String, String>) {
 
-			logger.info("MovementProcessor from stack ${record.key()} to stack ${record.value()}")
-			logger.info("MovementProcessor stack before from: ${store[record.key()]}")
-			logger.info("MovementProcessor stack before to:   ${store[record.value()]}")
+			val moveRegex = "(?<source>\\d+) to (?<dest>\\d+)".toRegex()
+			val regexGroups = moveRegex.matchEntire(record.value())!!.groups
+			val source = regexGroups["source"]!!.value
+			val dest = regexGroups["dest"]!!.value
 
-			val item = removeFromStack(record.key())
-			addToStack(record.value(), item)
+			logger.info("MovementProcessor ${record.key()} times from stack $source to stack $dest")
+			logger.info("MovementProcessor stack before from: ${store[source]}")
+			logger.info("MovementProcessor stack before to:   ${store[dest]}")
 
-			logger.info("MovementProcessor item: $item")
-			logger.info("MovementProcessor stack after  from: ${store[record.key()]}")
-			logger.info("MovementProcessor stack after  to:   ${store[record.value()]}")
+			repeat((0 until record.key().toInt()).count()) {
+				val item = removeFromStack(source)
+				addToStack(dest, item)
+				logger.info("MovementProcessor item: $item")
+			}
+
+			logger.info("MovementProcessor stack after  from: ${store[source]}")
+			logger.info("MovementProcessor stack after  to:   ${store[dest]}")
 		}
 
 		override fun close() {
