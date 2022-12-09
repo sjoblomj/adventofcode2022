@@ -35,14 +35,14 @@ class Day1 {
 	private val groupedTopic = "${inputTopic}_grouped_summation"
 	private val mutableListSerde: Serde<MutableList<Int>> = MutableListSerde()
 
-	internal fun solve(): KafkaStreamsSetup {
+	internal fun solve(): KafkaStreamsSetup<Int, Int> {
 		putDataOnTopic(0, null, groupedTopic) // Topic must exist; put a dummy value on it to create
 
 		val streamsBuilder = StreamsBuilder()
 		groupAndSum(streamsBuilder)
 		part1(streamsBuilder)
 		part2(streamsBuilder)
-		return KafkaStreamsSetup(streamsBuilder.build())
+		return KafkaStreamsSetup(streamsBuilder.build(), intSerde, intSerde)
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {

@@ -29,7 +29,7 @@ class Day2 {
 	private val totalScorePart1Topic = "${inputTopic}_total_score_$part1"
 	private val totalScorePart2Topic = "${inputTopic}_total_score_$part2"
 
-	internal fun solve(): KafkaStreamsSetup {
+	internal fun solve(): KafkaStreamsSetup<Int, Int> {
 		putDataOnTopic(null, null, totalScorePart1Topic) // Topic must exist; put a dummy value on it to create
 		putDataOnTopic(null, null, totalScorePart2Topic) // Topic must exist; put a dummy value on it to create
 
@@ -38,7 +38,7 @@ class Day2 {
 		part2(streamsBuilder)
 		calculateTotalScore(streamsBuilder, part1, totalScorePart1Topic)
 		calculateTotalScore(streamsBuilder, part2, totalScorePart2Topic)
-		return KafkaStreamsSetup(streamsBuilder.build())
+		return KafkaStreamsSetup(streamsBuilder.build(), intSerde, intSerde)
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {

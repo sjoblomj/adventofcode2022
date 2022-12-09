@@ -27,11 +27,11 @@ fun day3() {
 class Day3 {
 	val inputTopic = "${day}_${UUID.randomUUID()}"
 
-	internal fun solve(): KafkaStreamsSetup {
+	internal fun solve(): KafkaStreamsSetup<Int, Int> {
 		val streamsBuilder = StreamsBuilder()
 		part1(streamsBuilder)
 		part2(streamsBuilder)
-		return KafkaStreamsSetup(streamsBuilder.build())
+		return KafkaStreamsSetup(streamsBuilder.build(), intSerde, intSerde)
 	}
 
 	private fun part1(streamsBuilder: StreamsBuilder) {
