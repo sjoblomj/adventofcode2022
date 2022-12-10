@@ -35,11 +35,7 @@ class Day5 {
 	val inputTopic = "${day}_${UUID.randomUUID()}"
 
 	internal fun solve(): KafkaStreamsSetup<String, String> {
-		val topology = part1()
-		return KafkaStreamsSetup(topology, stringSerde, stringSerde)
-	}
 
-	private fun part1(): Topology {
 		val source = "${inputTopic}_source"
 		val sink = "${inputTopic}_sink"
 		val parserName = "${inputTopic}_parser"
@@ -54,7 +50,7 @@ class Day5 {
 		val stackAccumulatorStoreBuilder = KeyValueStoreBuilder(stackAccumulatorStore, stringSerde, MutableListSerde(), Time.SYSTEM)
 		val stackStoreBuilder = KeyValueStoreBuilder(stackStore, stringSerde, MutableListSerde(), Time.SYSTEM)
 
-		return Topology()
+		val topology = Topology()
 			.addSource(source, inputTopic)
 			.addProcessor(parserName, ProcessorSupplier { Parser(stackAccumulatorStoreName, stackAccumulatorName, stackBuilderName, movementProcessorName) }, source)
 			.addProcessor(stackAccumulatorName, ProcessorSupplier { StackAccumulator(stackAccumulatorStoreName) }, parserName)
@@ -65,6 +61,8 @@ class Day5 {
 			.addStateStore(stackStoreBuilder, stackBuilderName)
 			.addStateStore(stackStoreBuilder, movementProcessorName)
 			.addSink(sink, resultTopic, movementProcessorName)
+
+		return KafkaStreamsSetup(topology, stringSerde, stringSerde)
 	}
 
 
