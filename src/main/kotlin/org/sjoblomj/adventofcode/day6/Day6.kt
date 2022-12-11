@@ -25,8 +25,8 @@ fun day6() {
 	val stream = d.solve()
 
 	val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
-	logger.info("Sum of priorities of items in both compartments is {}", records.first { it.key() == "$day$part1" }.value())
-	logger.info("Sum of priorities of of each elf-triplet is {}", records.first { it.key() == "$day$part2" }.value())
+	logger.info("Start-of-packet  marker comes after position {}", records.first { it.key() == "$day$part1" }.value())
+	logger.info("Start-of-message marker comes after position {}", records.first { it.key() == "$day$part2" }.value())
 
 	stream.close()
 }
@@ -39,8 +39,9 @@ class Day6 {
 
 	internal fun solve(): KafkaStreamsSetup<String, String> {
 		val streamsBuilder = StreamsBuilder()
-		streamsBuilder.addStateStore(KeyValueStoreBuilder(inMemoryKeyValueStore("${storeName}_$part1"), stringSerde, intSerde, Time.SYSTEM))
-		streamsBuilder.addStateStore(KeyValueStoreBuilder(inMemoryKeyValueStore("${storeName}_$part2"), stringSerde, intSerde, Time.SYSTEM))
+		listOf("${storeName}_$part1", "${storeName}_$part2").forEach { name ->
+			streamsBuilder.addStateStore(KeyValueStoreBuilder(inMemoryKeyValueStore(name), stringSerde, intSerde, Time.SYSTEM))
+		}
 
 		solve(streamsBuilder, numberOfCharactersPart1, part1)
 		solve(streamsBuilder, numberOfCharactersPart2, part2)
@@ -50,9 +51,10 @@ class Day6 {
 
 	private fun solve(streamsBuilder: StreamsBuilder, numberOfCharacters: Int, part: String) {
 		val store = "${storeName}_$part"
+
 		streamsBuilder.stream(inputTopic, Consumed.with(stringSerde, stringSerde))
 			.mapValues { string -> string.toCharArray() }
-			.flatMap { _, characters -> characters.mapIndexed { index, char -> KeyValue("$index", char.toString()) } }
+			.flatMap { _, characters -> characters.mapIndexed { index, char -> KeyValue(index, char.toString()) } }
 			.processValues({ TimestampFaker() })
 			.groupBy { _, _ -> "" }
 			.windowedBy(SlidingWindows.ofTimeDifferenceWithNoGrace(Duration.ofSeconds(numberOfCharacters.toLong())))
@@ -66,14 +68,19 @@ class Day6 {
 			.to(resultTopic)
 	}
 
-	private class TimestampFaker<T> : FixedKeyProcessor<String, T, T> {
-		private lateinit var context: FixedKeyProcessorContext<String, T>
-		override fun init(context: FixedKeyProcessorContext<String, T>) {
+
+	/**
+	 * This will interpret the record key as the timestamp of the record (epoch). Thus, this Processor will
+	 * change the timestamps on the record to be that of the key, multiplied by 1000 (to convert to seconds).
+	 */
+	private class TimestampFaker<T> : FixedKeyProcessor<Int, T, T> {
+		private lateinit var context: FixedKeyProcessorContext<Int, T>
+		override fun init(context: FixedKeyProcessorContext<Int, T>) {
 			this.context = context
 		}
 
-		override fun process(record: FixedKeyRecord<String, T>) {
-			record.headers().add(RecordHeader("index", record.key().toByteArray()))
+		override fun process(record: FixedKeyRecord<Int, T>) {
+			record.headers().add(RecordHeader("index", record.key().toString().toByteArray()))
 			context.forward(record.withTimestamp((record.key().toLong() * 1000)))
 		}
 
