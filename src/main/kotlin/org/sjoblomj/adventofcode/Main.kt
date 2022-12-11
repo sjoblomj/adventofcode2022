@@ -4,6 +4,7 @@ import org.sjoblomj.adventofcode.day1.day1
 import org.sjoblomj.adventofcode.day2.day2
 import org.sjoblomj.adventofcode.day3.day3
 import org.sjoblomj.adventofcode.day5.day5
+import org.sjoblomj.adventofcode.day6.day6
 import kotlin.system.measureTimeMillis
 
 fun main() {
@@ -11,6 +12,7 @@ fun main() {
 	runDay(2) { day2() }
 	runDay(3) { day3() }
 	runDay(5) { day5() }
+	runDay(6) { day6() }
 }
 
 private fun runDay(number: Int, day: () -> Any) {
