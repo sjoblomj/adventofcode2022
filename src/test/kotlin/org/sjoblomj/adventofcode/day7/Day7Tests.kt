@@ -13,8 +13,9 @@ class Day7Tests {
 
 		val stream = d.solve()
 
-		val records = getAllRecords(resultTopic, listOf("${day}$part1"))
+		val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 		assertEquals("1444896", records.last { it.key() == "${day}$part1" }.value())
+		assertEquals("404395", records.last { it.key() == "${day}$part2" }.value())
 		stream.close()
 	}
 
@@ -52,8 +53,9 @@ class Day7Tests {
 
 		val stream = d.solve()
 
-		val records = getAllRecords(resultTopic, listOf("${day}$part1"))
+		val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 		assertEquals((94853 + 584).toString(), records.last { it.key() == "${day}$part1" }.value())
+		assertEquals("24933642", records.last { it.key() == "${day}$part2" }.value())
 		stream.close()
 	}
 }

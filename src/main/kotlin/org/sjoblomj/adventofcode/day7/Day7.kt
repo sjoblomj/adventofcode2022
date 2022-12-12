@@ -5,6 +5,7 @@ import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.Consumed
 import org.apache.kafka.streams.kstream.Produced
+import org.apache.kafka.streams.processor.PunctuationType
 import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.processor.api.ProcessorContext
 import org.apache.kafka.streams.processor.api.ProcessorSupplier
@@ -14,7 +15,9 @@ import org.apache.kafka.streams.state.Stores.inMemoryKeyValueStore
 import org.apache.kafka.streams.state.internals.KeyValueStoreBuilder
 import org.sjoblomj.adventofcode.kafka.*
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.*
+import kotlin.streams.toList
 
 const val day = "day7"
 
@@ -27,7 +30,7 @@ fun day7() {
 
 	val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 	logger.info("Sum of dirs with size less than ${d.maxDirSize}: {}", records.first { it.key() == "$day$part1" }.value())
-	logger.info("Start-of-message marker comes after position {}", records.first { it.key() == "$day$part2" }.value())
+	logger.info("Size of directory to delete: {}", records.first { it.key() == "$day$part2" }.value())
 
 	stream.close()
 }
@@ -35,32 +38,55 @@ fun day7() {
 class Day7 {
 	val inputTopic = "${day}_${UUID.randomUUID()}"
 	val maxDirSize = 100000
-	private val storeName = "${inputTopic}_store"
+	private val totalDiskSpace = 70000000L
+	private val unusedSpaceNeeded = 30000000L
+	private val listStoreName = "${inputTopic}_store_list"
+	private val sizeStoreName = "${inputTopic}_store_size"
 
 	internal fun solve(): KafkaStreamsSetup<String, Long> {
 		val streamsBuilder = StreamsBuilder()
-		listOf("${storeName}_$part1").forEach { name ->
-			streamsBuilder.addStateStore(KeyValueStoreBuilder(inMemoryKeyValueStore(name), stringSerde, MutableListSerde(), Time.SYSTEM))
+
+		listOf(
+			"${listStoreName}_$part1" to MutableListSerde(),
+			"${listStoreName}_$part2" to MutableListSerde(),
+			sizeStoreName to longSerde
+		).forEach { (name, serde) ->
+			streamsBuilder.addStateStore(KeyValueStoreBuilder(inMemoryKeyValueStore(name), stringSerde, serde, Time.SYSTEM))
 		}
 
-		solve(streamsBuilder, part1)
+		part1(streamsBuilder)
+		part2(streamsBuilder)
 
 		return KafkaStreamsSetup(streamsBuilder.build(), stringSerde, longSerde)
 	}
 
-	private fun solve(streamsBuilder: StreamsBuilder, part: String) {
-		val storeName = "${storeName}_$part"
+	private fun part1(streamsBuilder: StreamsBuilder) {
+		val storeName = "${listStoreName}_$part1"
 
 		streamsBuilder.stream(inputTopic, Consumed.with(stringSerde, stringSerde))
 			.process(ProcessorSupplier { Parser(storeName) }, storeName)
 			.groupByKey()
 			.reduce { size1, size2 -> size1 + size2 }
 			.filter { _, value -> value < maxDirSize }
-			.groupBy { _, value -> KeyValue("$day$part", value) }
+			.groupBy { _, value -> KeyValue("", value) }
 			.reduce({ size1, size2 -> size1 + size2 }, { size1, size2 -> size1 - size2 })
 			.toStream()
-			.map { _, value -> KeyValue("$day$part", value.toString()) }
-			.peek { _, value -> logger.info("Result $part: $value") }
+			.map { _, value -> KeyValue("$day$part1", value.toString()) }
+			.peek { _, value -> logger.info("Result $part1: $value") }
+			.to(resultTopic, Produced.with(stringSerde, stringSerde))
+	}
+
+	private fun part2(streamsBuilder: StreamsBuilder) {
+		val listStoreName = "${listStoreName}_$part2"
+
+		streamsBuilder.stream(inputTopic, Consumed.with(stringSerde, stringSerde))
+			.process(ProcessorSupplier { Parser(listStoreName) }, listStoreName)
+			.groupByKey()
+			.reduce { size1, size2 -> size1 + size2 }
+			.toStream()
+			.process(ProcessorSupplier { DirectoryToDeleteProcessor(sizeStoreName, totalDiskSpace, unusedSpaceNeeded) }, sizeStoreName)
+			.map { _, value -> KeyValue("$day$part2", value.toString()) }
+			.peek { _, value -> logger.info("Result $part2: $value") }
 			.to(resultTopic, Produced.with(stringSerde, stringSerde))
 	}
 
@@ -83,7 +109,7 @@ class Day7 {
 			if (command[0] == "$" && command[1] == "cd") {
 				parseDirectoryChange(command[2])
 			} else if (command[0].isNumeric()) {
-				forwardFileSizeToAllParentDirs(record, command[0].toLong(), command[1])
+				forwardFileSizeToAllParentDirs(record, command[0].toLong())
 			}
 		}
 
@@ -101,17 +127,66 @@ class Day7 {
 		}
 
 
-		private fun forwardFileSizeToAllParentDirs(record: Record<String, String>, fileSize: Long, fileName: String) {
+		private fun forwardFileSizeToAllParentDirs(record: Record<String, String>, fileSize: Long) {
 			(1 .. store[pwd].size).forEach { numberOfDirs ->
 				val dirs = store[pwd].take(numberOfDirs)
 				val path = dirs.joinToString("/").replace("^//".toRegex(), "/")
 
-				val pathWithFileName = store[pwd].plus(fileName).joinToString("/").replace("^//".toRegex(), "/")
-				val r = Record(path, fileSize, record.timestamp())
-				context.forward(r)
+				context.forward(Record(path, fileSize, record.timestamp()))
 			}
 		}
 
 		private fun String.isNumeric() = this.toLongOrNull() != null
+	}
+
+
+	private class DirectoryToDeleteProcessor(
+		private val stateStoreName: String,
+		private val totalDiskSpace: Long,
+		private val unusedSpaceNeeded: Long
+	) : Processor<String, Long, String, Long> {
+		private lateinit var context: ProcessorContext<String, Long>
+		private lateinit var store: KeyValueStore<String, Long>
+		private var spaceToClear: Long? = null
+
+		override fun init(context: ProcessorContext<String, Long>) {
+			this.context = context
+			this.store = context.getStateStore(stateStoreName)
+
+			context.schedule(Duration.ofSeconds(5), PunctuationType.WALL_CLOCK_TIME, this::forwardSizeOfDirToClear)
+		}
+
+		override fun process(record: Record<String, Long>) {
+			if (record.key() == "/") {
+				spaceToClear = unusedSpaceNeeded - (totalDiskSpace - record.value())
+				logger.info("root has size ${record.value()}, need to clear $spaceToClear")
+			}
+			store.put(record.key(), record.value())
+		}
+
+		override fun close() {
+		}
+
+
+		private fun forwardSizeOfDirToClear(timestamp: Long) {
+			val amountOfSpaceToClear = spaceToClear ?: return
+
+			val sizes = mutableListOf<Pair<String, Long>>()
+			store.all().use {
+				while (it.hasNext()) {
+					val kv = it.next()
+					sizes.add(kv.key to kv.value)
+				}
+			}
+
+			val sizeOfDirToClear = sizes
+				.sortedBy { it.second }
+				.stream()
+				.peek { println("${it.first} : ${it.second} ${if (it.second < amountOfSpaceToClear) "<" else ">"} $amountOfSpaceToClear") }
+				.toList()
+				.filter { it.second > amountOfSpaceToClear }.minOf { it.second }
+
+			context.forward(Record("", sizeOfDirToClear, timestamp))
+		}
 	}
 }
