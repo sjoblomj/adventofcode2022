@@ -9,3 +9,4 @@ const val part2 = "part2"
 
 val stringSerde = Serdes.StringSerde()
 val intSerde = Serdes.IntegerSerde()
+val longSerde = Serdes.LongSerde()
