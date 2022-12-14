@@ -109,7 +109,7 @@ class Day7 {
 			if (command[0] == "$" && command[1] == "cd") {
 				parseDirectoryChange(command[2])
 			} else if (command[0].isNumeric()) {
-				forwardFileSizeToAllParentDirs(record, command[0].toLong())
+				forwardFileSizeToAllParentDirs(command[0].toLong(), record.timestamp())
 			}
 		}
 
@@ -117,6 +117,10 @@ class Day7 {
 		}
 
 
+		/**
+		 * Adds the given [dirName] to the state store that keeps track of the directory of the current file.
+		 * If [dirName] is "..", the last directory is dropped from the state store.
+		 */
 		private fun parseDirectoryChange(dirName: String) {
 			val dirs = if (dirName == "..") {
 				store[pwd].dropLast(1).toMutableList()
@@ -127,12 +131,24 @@ class Day7 {
 		}
 
 
-		private fun forwardFileSizeToAllParentDirs(record: Record<String, String>, fileSize: Long) {
+		/**
+		 * Given a [fileSize] that will be used as the record value, this will produce one record *for each*
+		 * parent-directory of the file (where the directories of the file is given by the state store). All produced
+		 * records will have the given [timestamp].
+		 *
+		 * For example, if [fileSize] is 71, and the pwd of the state store is [/, apa, bepa, cepa] (indicating that the
+		 * file is in directory /apa/bepa/cepa), then records with these KeyValues will be created:
+		 * {"/", 71},
+		 * {"/apa", 71},
+		 * {"/apa/bepa", 71},
+		 * {"/apa/bepa/cepa", 71}
+		 */
+		private fun forwardFileSizeToAllParentDirs(fileSize: Long, timestamp: Long) {
 			(1 .. store[pwd].size).forEach { numberOfDirs ->
 				val dirs = store[pwd].take(numberOfDirs)
 				val path = dirs.joinToString("/").replace("^//".toRegex(), "/")
 
-				context.forward(Record(path, fileSize, record.timestamp()))
+				context.forward(Record(path, fileSize, timestamp))
 			}
 		}
 
@@ -184,7 +200,8 @@ class Day7 {
 				.stream()
 				.peek { println("${it.first} : ${it.second} ${if (it.second < amountOfSpaceToClear) "<" else ">"} $amountOfSpaceToClear") }
 				.toList()
-				.filter { it.second > amountOfSpaceToClear }.minOf { it.second }
+				.filter { it.second > amountOfSpaceToClear }
+				.minOf { it.second }
 
 			context.forward(Record("", sizeOfDirToClear, timestamp))
 		}
