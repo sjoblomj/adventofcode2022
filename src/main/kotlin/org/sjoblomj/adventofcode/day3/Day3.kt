@@ -19,7 +19,7 @@ fun day3() {
 
 	val records = getAllRecords(resultTopic, listOf("${day}$part1", "${day}$part2"))
 	logger.info("Sum of priorities of items in both compartments is {}", records.first { it.key() == "$day$part1" }.value())
-	logger.info("Sum of priorities of of each elf-triplet is {}", records.first { it.key() == "$day$part2" }.value())
+	logger.info("Sum of priorities of each elf-triplet is {}", records.first { it.key() == "$day$part2" }.value())
 
 	stream.close()
 }
