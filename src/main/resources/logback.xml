@@ -11,6 +11,7 @@
 
 	<logger name="org.apache" level="${log.level.org.apache:-INFO}" />
 	<logger name="org.apache.kafka" level="${log.level.org.apache.kafka:-WARN}" />
+	<logger name="org.apache.kafka.clients" level="${log.level.org.apache.kafka.clients:-ERROR}" />
 	<logger name="ch.qos.logback" level="${log.level.ch.qos.logback:-INFO}" />
 
 	<logger name="io" level="INFO"/>

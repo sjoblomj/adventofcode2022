@@ -18,13 +18,13 @@ repositories {
 }
 
 dependencies {
-	implementation("org.apache.kafka:kafka-clients:3.3.1")
-	implementation("org.apache.kafka:kafka-streams:3.3.1")
-	implementation("ch.qos.logback:logback-core:1.4.5")
-	implementation("ch.qos.logback:logback-classic:1.4.5")
-	implementation("net.logstash.logback:logstash-logback-encoder:7.2")
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.1")
-	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.1")
+	implementation("org.apache.kafka:kafka-clients:3.5.1")
+	implementation("org.apache.kafka:kafka-streams:3.5.1")
+	implementation("ch.qos.logback:logback-core:1.4.11")
+	implementation("ch.qos.logback:logback-classic:1.4.11")
+	implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
 	testImplementation(kotlin("test"))
 }
 
